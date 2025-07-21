@@ -99,7 +99,6 @@
     max-width: 90%;
   }
 
-
   .confetti-piece {
     position: fixed;
     width: 30px;
@@ -115,25 +114,24 @@
     animation: emoji-rain 4s linear forwards;
   }
 
-  .word-count-box {
-  background-color: rgba(255, 255, 255, 0.85);
-  padding: 5px 10px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-  display: inline-block;
-}
-
-
   @keyframes emoji-rain {
     0% {
-      transform: translateY(-100vh);
+      transform: translateY(-100vh) rotate(0deg);
       opacity: 1;
     }
     100% {
-      transform: translateY(100vh);
+      transform: translateY(100vh) rotate(360deg);
       opacity: 0;
     }
+  }
+
+  .word-count-box {
+    background-color: rgba(255, 255, 255, 0.85);
+    padding: 5px 10px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    display: inline-block;
   }
 
   @media (min-width: 481px) {
@@ -172,10 +170,13 @@
   <h1>🎉 Encuentra a los perritos Pomaire! 🎉</h1>
   <div id="grid-container"></div>
   <div id="word-list">
-  <div class="word-count-box">
-    <h3 id="word-count">0/11 perritos encontrados</h3>
+    <div class="word-count-box">
+      <h3 id="word-count">0/11 perritos encontrados</h3>
+    </div>
   </div>
-</div>
+
+  <!-- ✅ Completion message that was missing -->
+  <div id="completion-message">🎉 ¡Felicitaciones! ¡Encontraste todos los perritos! 🎉</div>
 
   <script>
     const words = ["MARIA", "MOLLY", "ALCACHOFA", "POLAINAS", "MICHU", "LUPE", "LIPA", "LOKI", "MARTINA", "MILA", "MIGUEL"];
@@ -258,7 +259,6 @@
           }, { passive: false });
 
           div.addEventListener("mouseenter", () => extendSelection(i, j));
-
           gridContainer.appendChild(div);
         }
       }
@@ -315,11 +315,13 @@
     }
 
     function triggerConfetti() {
-      completionMessage.style.display = "block";
-      createCSSConfetti();
+      if (completionMessage) {
+        completionMessage.style.display = "block";
+      }
+      createEmojiConfetti();
     }
 
-    function createCSSConfetti() {
+    function createEmojiConfetti() {
       const dogEmojis = ['🐕', '🐶', '🦮', '🐕‍🦺', '🐩', '🦴', '🎾', '🥎'];
       for (let i = 0; i < 80; i++) {
         setTimeout(() => {
@@ -330,7 +332,6 @@
           emojiPiece.style.top = (Math.random() * -30 - 10) + 'vh';
           emojiPiece.style.animationDelay = Math.random() * 2 + 's';
           emojiPiece.style.animationDuration = (Math.random() * 1.5 + 3) + 's';
-
           document.body.appendChild(emojiPiece);
 
           setTimeout(() => {
