@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Word Search Game</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+    position: relative;
+    z-index: 0;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('perro.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.6;
+    z-index: -1;
+  }
+
+  h1 {
+    font-size: 2em;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #000;
+  }
+
+  #grid-container {
+    background-color: rgba(255, 255, 255, 0.92);
+    display: grid;
+    grid-template-columns: repeat(12, minmax(24px, 1fr));
+    gap: 2px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    border-radius: 10px;
+    padding: 5px;
+  }
+
+  .grid-cell {
+    background-color: white;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    touch-action: none;
+  }
+
+  .grid-cell.selected {
+    background-color: #ff69b4;
+    color: white;
+    transform: scale(1.1);
+    transition: transform 0.1s ease;
+  }
+
+  .grid-cell.found {
+    background-color: #32cd32;
+    color: white;
+  }
+
+  #word-list {
+    font-size: 1em;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  #completion-message {
+    display: none;
+    margin-top: 10px;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #FF69B4;
+    text-align: center;
+  }
+
+  .confetti-piece {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    opacity: 1 !important;
+    text-shadow: 1px 1px 2px white;
+    animation: emoji-rain 4s linear forwards;
+  }
+
+  @keyframes emoji-rain {
+    0% {
+      transform: translateY(-100vh);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+
+  @media (min-width: 481px) {
+    body {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .grid-cell {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #grid-container {
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1px;
+      max-width: 100%;
+    }
+
+    .grid-cell {
+      font-size: 3.5vw;
+    }
+
+    h1 {
+      font-size: 1.6em;
+    }
+
+    #word-list {
+      font-size: 0.9em;
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>🎉 Encuentra a los perritos Pomaire! 🎉</h1>
+  <div id="grid-container"></div>
+  <div id="word-list"><h3 id="word-count">0/11 perritos encontrados</h3></div>
+  <div id="completion-message">🎉 ¡Felicidades! Los encontraste a todos 🎉</div>
+
+  <script>
+    const words = ["MARIA", "MOLLY", "ALCACHOFA", "POLAINAS", "MICHU", "LUPE", "LIPA", "LOKI", "MARTINA", "MILA", "MIGUEL"];
+    const gridSize = 12;
+    let gridContainer, wordListContainer, completionMessage;
+    const foundWords = new Set();
+    let grid = [];
+    let selectedCells = [];
+    let isSelecting = false;
+
+    function generateGrid() {
+      for (let i = 0; i < gridSize; i++) {
+        grid[i] = [];
+        for (let j = 0; j < gridSize; j++) {
+          grid[i][j] = "";
+        }
+      }
+    }
+
+    function placeWords() {
+      words.forEach((word) => {
+        let placed = false;
+        while (!placed) {
+          const dir = Math.random() > 0.5 ? "H" : "V";
+          const row = Math.floor(Math.random() * (dir === "H" ? gridSize : gridSize - word.length));
+          const col = Math.floor(Math.random() * (dir === "V" ? gridSize : gridSize - word.length));
+
+          let fits = true;
+          for (let i = 0; i < word.length; i++) {
+            const r = dir === "H" ? row : row + i;
+            const c = dir === "H" ? col + i : col;
+            if (grid[r][c] !== "") {
+              fits = false;
+              break;
+            }
+          }
+
+          if (fits) {
+            for (let i = 0; i < word.length; i++) {
+              const r = dir === "H" ? row : row + i;
+              const c = dir === "H" ? col + i : col;
+              grid[r][c] = word[i];
+            }
+            placed = true;
+          }
+        }
+      });
+    }
+
+    function fillRandomLetters() {
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (grid[i][j] === "") {
+            grid[i][j] = alphabet[Math.floor(Math.random() * alphabet.length)];
+          }
+        }
+      }
+    }
+
+    function renderGrid() {
+      gridContainer.innerHTML = "";
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const div = document.createElement("div");
+          div.className = "grid-cell";
+          div.textContent = grid[i][j];
+          div.dataset.row = i;
+          div.dataset.col = j;
+
+          div.addEventListener("mousedown", () => startSelection(i, j));
+          div.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            startSelection(i, j);
+          }, { passive: false });
+
+          div.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            handleTouchMove(e);
+          }, { passive: false });
+
+          div.addEventListener("mouseenter", () => extendSelection(i, j));
+
+          gridContainer.appendChild(div);
+        }
+      }
+
+      document.addEventListener("mouseup", () => {
+        isSelecting = false;
+        checkSelection();
+      });
+
+      document.addEventListener("touchend", () => {
+        isSelecting = false;
+        checkSelection();
+      });
+    }
+
+    function startSelection(row, col) {
+      isSelecting = true;
+      selectedCells = [];
+      highlightCell(row, col);
+    }
+
+    function extendSelection(row, col) {
+      if (!isSelecting) return;
+      highlightCell(row, col);
+    }
+
+    function highlightCell(row, col) {
+      const cell = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
+      if (selectedCells.every(c => !(c.row === row && c.col === col))) {
+        cell.classList.add("selected");
+        selectedCells.push({ row, col });
+      }
+    }
+
+    function checkSelection() {
+      const word = selectedCells.map(({ row, col }) => grid[row][col]).join("");
+      if (words.includes(word) && !foundWords.has(word)) {
+        selectedCells.forEach(({ row, col }) => {
+          document.querySelector(`[data-row='${row}'][data-col='${col}']`).classList.add("found");
+        });
+
+        foundWords.add(word);
+        document.getElementById("word-count").textContent = `${foundWords.size}/${words.length} perritos encontrados`;
+
+        if (foundWords.size === words.length) {
+          triggerConfetti();
+        }
+      } else {
+        selectedCells.forEach(({ row, col }) => {
+          document.querySelector(`[data-row='${row}'][data-col='${col}']`).classList.remove("selected");
+        });
+      }
+      selectedCells = [];
+    }
+
+    function triggerConfetti() {
+      completionMessage.style.display = "block";
+      createCSSConfetti();
+    }
+
+    function createCSSConfetti() {
+      const dogEmojis = ['🐕', '🐶', '🦮', '🐕‍🦺', '🐩', '🦴', '🎾', '🥎'];
+      for (let i = 0; i < 80; i++) {
+        setTimeout(() => {
+          const emojiPiece = document.createElement('div');
+          emojiPiece.className = 'confetti-piece';
+          emojiPiece.textContent = dogEmojis[Math.floor(Math.random() * dogEmojis.length)];
+          emojiPiece.style.left = Math.random() * 100 + 'vw';
+          emojiPiece.style.top = (Math.random() * -30 - 10) + 'vh';
+          emojiPiece.style.animationDelay = Math.random() * 2 + 's';
+          emojiPiece.style.animationDuration = (Math.random() * 1.5 + 3) + 's';
+
+          document.body.appendChild(emojiPiece);
+
+          setTimeout(() => {
+            if (emojiPiece.parentNode) {
+              emojiPiece.parentNode.removeChild(emojiPiece);
+            }
+          }, 5000);
+        }, i * 30);
+      }
+    }
+
+    function init() {
+      gridContainer = document.getElementById("grid-container");
+      wordListContainer = document.getElementById("word-list");
+      completionMessage = document.getElementById("completion-message");
+
+      generateGrid();
+      placeWords();
+      fillRandomLetters();
+      renderGrid();
+    }
+
+    function handleTouchMove(e) {
+      const touch = e.touches[0];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element && element.classList.contains("grid-cell")) {
+        const row = parseInt(element.dataset.row);
+        const col = parseInt(element.dataset.col);
+        extendSelection(row, col);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
