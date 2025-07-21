@@ -115,6 +115,16 @@
     animation: emoji-rain 4s linear forwards;
   }
 
+  .word-count-box {
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 5px 10px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  display: inline-block;
+}
+
+
   @keyframes emoji-rain {
     0% {
       transform: translateY(-100vh);
@@ -161,7 +171,11 @@
 <body>
   <h1>🎉 Encuentra a los perritos Pomaire! 🎉</h1>
   <div id="grid-container"></div>
-  <div id="word-list"><h3 id="word-count">0/11 perritos encontrados</h3></div>
+  <div id="word-list">
+  <div class="word-count-box">
+    <h3 id="word-count">0/11 perritos encontrados</h3>
+  </div>
+</div>
 
   <script>
     const words = ["MARIA", "MOLLY", "ALCACHOFA", "POLAINAS", "MICHU", "LUPE", "LIPA", "LOKI", "MARTINA", "MILA", "MIGUEL"];
